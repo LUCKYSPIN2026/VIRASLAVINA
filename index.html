@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VIRA SLAVINA - ROYAL SPIN</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --gold: #ffcc00; --dark: #050505; }
+        body { 
+            background: radial-gradient(circle, #1a1a1a 0%, var(--dark) 100%); 
+            color: white; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; min-height: 100vh; margin: 0; overflow: hidden; 
+        }
+        
+        .header { text-align: center; margin-bottom: 20px; }
+        h1 { font-size: 1.6rem; letter-spacing: 5px; color: var(--gold); text-shadow: 0 0 10px rgba(255,204,0,0.5); margin:0; }
+        
+        .input-area { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 15px; margin: 15px 0; border: 1px solid rgba(255,215,0,0.3); }
+        input { background: transparent; border: none; color: var(--gold); text-align: center; font-family: 'Orbitron'; font-size: 1.1rem; outline: none; width: 250px; text-transform: uppercase; }
+
+        .wheel-container { position: relative; width: 330px; height: 330px; }
+        .pointer { 
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%); 
+            width: 40px; height: 50px; background: var(--gold); 
+            clip-path: polygon(50% 100%, 0 0, 100% 0); z-index: 100; 
+            box-shadow: 0 0 15px var(--gold); border: 1px solid #fff;
+        }
+        
+        .wheel-outer { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #222; position: relative; box-shadow: 0 0 40px rgba(0,0,0,1); }
+        canvas#wheel { width: 100%; height: 100%; border-radius: 50%; transition: transform 8s cubic-bezier(0.1, 0, 0.1, 1); transform: rotate(0deg); }
+
+        #spin-btn { 
+            margin-top: 30px; width: 260px; padding: 15px; border-radius: 50px; 
+            border: none; font-family: 'Orbitron'; font-weight: 900; 
+            background: #1a1a1a; color: #444; cursor: not-allowed; 
+            font-size: 1rem; transition: 0.3s; letter-spacing: 2px;
+        }
+        #spin-btn.ready { background: linear-gradient(45deg, var(--gold), #ffaa00); color: #000; cursor: pointer; box-shadow: 0 0 25px rgba(255,204,0,0.4); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>VIRA SLAVINA</h1>
+        <div class="input-area">
+            <input type="text" id="voucher" placeholder="INPUT KODE VOUCHER" autocomplete="off">
+        </div>
+    </div>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <div class="wheel-outer">
+            <canvas id="wheel" width="600" height="600"></canvas>
+        </div>
+    </div>
+
+    <button id="spin-btn" disabled>STANDBY</button>
+
+    <script>
+        const CODES = ["VIRA2026", "HOKIVIRA", "SLAVINA77"];
+        
+        // Audio Engine (Tanpa File Luar - Anti Gagal)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(freq, type, duration) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const prizes = [
+            { label: "500K", color: "#000", text: "#00f2ff" },
+            { label: "ZONK", color: "#0a0a0a", text: "#666" },    // Target 1
+            { label: "10K", color: "#000", text: "#ff007f" },     // Target 2
+            { label: "15K", color: "#0a0a0a", text: "#00ff88" },
+            { label: "200K", color: "#000", text: "#ffcc00" },
+            { label: "ZONK", color: "#0a0a0a", text: "#666" },    // Target 5
+            { label: "100K", color: "#000", text: "#00f2ff" },
+            { label: "KAOS", color: "#0a0a0a", text: "#ff007f" }
+        ];
+
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spin-btn');
+        const voucherInput = document.getElementById('voucher');
+        let rotation = 0;
+
+        function draw() {
+            const arc = (Math.PI * 2) / 8;
+            ctx.clearRect(0,0,600,600);
+            prizes.forEach((p, i) => {
+                ctx.save();
+                ctx.beginPath();
+                ctx.fillStyle = p.color;
+                ctx.moveTo(300, 300);
+                ctx.arc(300, 300, 300, i*arc, (i+1)*arc);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(255,215,0,0.1)";
+                ctx.stroke();
+                ctx.translate(300, 300);
+                ctx.rotate(i*arc + arc/2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = p.text;
+                ctx.font = "bold 26px Orbitron";
+                ctx.fillText(p.label, 280, 10);
+                ctx.restore();
+            });
+
+            // LOGO V MAHKOTA
+            ctx.save();
+            ctx.beginPath(); ctx.arc(300, 300, 70, 0, 7); ctx.fillStyle = "#000"; ctx.fill();
+            ctx.strokeStyle = "gold"; ctx.lineWidth = 5; ctx.stroke();
+            ctx.fillStyle = "gold";
+            ctx.beginPath();
+            ctx.moveTo(270, 275); ctx.lineTo(260, 250); ctx.lineTo(285, 260);
+            ctx.lineTo(300, 235); ctx.lineTo(315, 260); ctx.lineTo(340, 250);
+            ctx.lineTo(330, 275); ctx.fill();
+            ctx.fillStyle = "white"; ctx.font = "bold 60px 'Playfair Display'";
+            ctx.textAlign = "center"; ctx.fillText("V", 300, 320);
+            ctx.restore();
+        }
+        draw();
+
+        voucherInput.addEventListener('input', () => {
+            if(CODES.includes(voucherInput.value.toUpperCase().trim())) {
+                spinBtn.disabled = false;
+                spinBtn.classList.add('ready');
+                spinBtn.innerText = "PUTAR SEKARANG";
+            } else {
+                spinBtn.disabled = true;
+                spinBtn.classList.remove('ready');
+                spinBtn.innerText = "STANDBY";
+            }
+        });
+
+        spinBtn.addEventListener('click', () => {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            
+            spinBtn.disabled = true;
+            spinBtn.classList.remove('ready');
+
+            // LOCK HADIAH: HANYA ZONK ATAU 10K
+            const pool = [1, 2, 5];
+            const targetIdx = pool[Math.floor(Math.random() * pool.length)];
+
+            const degreePerItem = 360 / 8;
+            const targetAngle = (targetIdx * degreePerItem) + (degreePerItem / 2);
+            const extraRot = 3600; 
+            const finalMove = extraRot + (270 - targetAngle); 
+            
+            rotation += finalMove;
+            canvas.style.transform = `rotate(${rotation}deg)`;
+
+            // Suara Tick selama berputar
+            let ticks = 0;
+            const interval = setInterval(() => {
+                playSound(600 + (ticks % 2 * 200), 'sine', 0.1);
+                ticks++;
+                if(ticks > 35) clearInterval(interval);
+            }, 200);
+
+            setTimeout(() => {
+                const win = prizes[targetIdx];
+                if(win.label === "10K") {
+                    // Suara Menang
+                    playSound(523.25, 'square', 0.2);
+                    setTimeout(() => playSound(659.25, 'square', 0.2), 150);
+                    setTimeout(() => playSound(783.99, 'square', 0.4), 300);
+                    confetti({ particleCount: 200, spread: 80, colors: ['#ffcc00', '#ffffff'] });
+                }
+
+                Swal.fire({
+                    title: win.label === "ZONK" ? "YAHH ZONK!" : "ROYAL WINNER!",
+                    text: win.label === "ZONK" ? "Coba lagi besok ya bosku!" : `Selamat! Anda mendapatkan ${win.label}`,
+                    icon: win.label === "ZONK" ? "error" : "success",
+                    background: "#111", color: "#fff", confirmButtonColor: "gold"
+                }).then(() => location.reload());
+            }, 8200);
+        });
+    </script>
+</body>
+</html>
