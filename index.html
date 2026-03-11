@@ -151,7 +151,7 @@
             spinBtn.disabled = true;
             spinBtn.classList.remove('ready');
 
-            // LOCK HADIAH: HANYA ZONK ATAU 10K
+            // LOCK HADIAH: HANYA 500K
             const pool = [1, 2, 5];
             const targetIdx = pool[Math.floor(Math.random() * pool.length)];
 
@@ -173,7 +173,7 @@
 
             setTimeout(() => {
                 const win = prizes[targetIdx];
-                if(win.label === "10K") {
+                if(win.label === "10k") {
                     // Suara Menang
                     playSound(523.25, 'square', 0.2);
                     setTimeout(() => playSound(659.25, 'square', 0.2), 150);
